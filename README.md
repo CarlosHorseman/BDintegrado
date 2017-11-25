@@ -1,0 +1,449 @@
+# BDintegrado
+
+
+create schema UBER
+default character set utf8
+default collate utf8_general_ci;
+
+use UBER;
+
+create table Custos_Extras (
+idCustos_Extras int auto_increment not null,
+Data_Compra varchar(20), 
+Descrição varchar (100),
+Quantidade int ,
+Valor double ,
+primary key (idCustos_Extras)
+);
+
+/* Criar Tabela Custos Extras */
+
+create table Custos_Fixos (
+idCusto_Fixos int auto_increment not null,
+Data_Compra varchar(20),
+Descricao varchar(100),
+Periodo varchar(50),
+Preco Double,
+Custos_Extras int,
+Primary Key (idCusto_Fixos)
+);
+
+
+/* Criar Tabale Custos Fixos */
+ 
+create table Relatorio_Diario (
+idRelatorio_Diario int auto_increment not null,
+Data_Viagem varchar(20),
+Quantidade_De_Viagens int,
+Km_do_dia int,
+Quantas_Horas_Online int,
+Lucro Double,
+Primary Key (idRelatorio_Diario)
+);
+
+/* Criar Tabale Relatorio_Diario */
+
+create table Relatorio_Mensal (
+idRelatorio_Mensal int auto_increment not null,
+Data_Viagem varchar(20), 
+Km_Inicio int,
+Km_Final int,
+Km_Total int,
+Relatorio_Diario int,
+Primary Key (idRelatorio_Mensal)
+);
+
+
+/* Criar Tabale Relatorio Mensal */
+
+create table Faturamento (
+idFaturamento int auto_increment not null,
+Km_percorrido float,
+Despesas_totais float,
+Total_de_Horas int,
+Lucro_Total int,
+Custo_Fixo int,
+Relatorio_Mensal int,
+Primary Key (idFaturamento)
+);
+
+
+/* Criar Tabale Faturamento */
+
+create table Manuntenção (
+idManutenção int auto_increment not null,
+Troca_de_Oléo int,
+Troca_de_Pneus int,
+Lavagem int,
+Faturamento int,
+Primary Key (idManutenção)
+);
+
+/* Criar Tabale Manutenção */
+
+alter table Custos_fixos 
+add foreign key (Custos_Extras)
+references custos_fixos (idCusto_Fixos);
+
+alter table Faturamento 
+add foreign key (Custo_fixo)
+references Faturamento (idFaturamento);
+
+alter table Faturamento 
+add foreign key (Relatorio_Mensal)
+references Faturamento (idFaturamento);
+
+alter table Manuntenção 
+add foreign key (Faturamento)
+references Manuntenção (idManutenção);
+
+alter table Relatorio_Mensal
+add foreign key (Relatorio_Diario)
+references Relatorio_Diario (idRelatorio_Diario);
+
+/* Adicionando Chave estrangeira */
+
+
+create view MaximoCusto
+as SELECT Custos_fixos.Descricao, custos_fixos.idCusto_Fixos, MAX(custos_fixos.Preco), custos_extras.Descrição
+FROM custos_fixos 
+inner join custos_extras
+on custos_extras.idCustos_extras = custos_fixos.Custos_extras
+group by custos_fixos.idCusto_fixos;
+
+/* View */ 
+
+create view Quantidade_Itens
+as SELECT Custos_fixos.Descricao, custos_fixos.idCusto_Fixos, COUNT(custos_fixos.Descricao), custos_extras.Descrição
+FROM custos_fixos 
+inner join custos_extras
+on custos_extras.idCustos_extras = custos_fixos.Custos_extras
+group by custos_fixos.idCusto_fixos;
+
+/* View */ 
+
+create view Soma_de_Valores	
+as SELECT faturamento.Despesas_totais, SUM(faturamento.Km_Percorrido), Manuntenção.Lavagem
+FROM faturamento 
+inner join manuntenção
+on faturamento.idFaturamento = manuntenção.idManutenção
+group by faturamento.idFaturamento;
+
+/* View */ 
+
+create view vw_Manutenção
+as SELECT manuntenção.troca_de_Oléo, manuntenção.Troca_de_Pneus, MAX(manuntenção.Lavagem)
+FROM manuntenção;
+
+/* View */
+
+create view vw_Valor
+as SELECT custos_extras.Descrição, custos_extras.Quantidade, SUM(custos_extras.valor)
+FROM custos_extras;
+
+/* View */ 
+
+create view vw_Lucro_Total
+as SELECT faturamento.Total_De_Horas , faturamento.Despesas_totais, MAX(faturamento.Lucro_Total)
+from faturamento;
+
+/* View */
+
+CREATE TRIGGER TG_Atualizar_Dados BEFORE INSERT
+on Manuntenção
+for each row
+set new.Troca_de_Oléo = (new.Troca_de_Oléo * 0.90);
+
+/* Trigger */ 
+
+CREATE TRIGGER TG_Atualizar_Dados1 BEFORE INSERT
+on Faturamento
+for each row
+set new.Despesas_totais = (new.Despesas_totais  * 0.50);
+
+/* Trigger */ 
+
+
+CREATE TRIGGER TG_Atualizar_Dados2 BEFORE INSERT
+on relatorio_diario
+for each row
+set new.Km_do_dia = (new.Km_do_dia   + 0.50);
+
+/* Trigger */ 
+
+create procedure Motorista ( custos int)
+select CONCAT(' O Plano de Internet  é ') , Preco as custo_fixos
+from custos_fixos
+where idCusto_Fixos = custos;
+
+call motorista (3);
+ 
+ /* ------------------------------------------------------------------------ */
+
+ 
+create procedure Combustivel ( combustivel Decimal (5,2))
+select CONCAT(' O Preço do Combustivel  é ') , Combustivel as custo_fixos
+from custos_fixos
+where idCusto_Fixos = combustivel;
+
+call Combustivel (3);
+
+ /* ------------------------------------------------------------------------ */
+
+ 
+create procedure Nome ( Nome varchar (100))
+select CONCAT(' A descrição  é ') , Descrição as custos_extras
+from custos_extras
+where idCustos_extras = nome ;
+
+call Nome (2);
+
+/* ------------------------------------------------------------------------ */
+
+create procedure Total_KM ( total_KM float)
+select CONCAT(' O total de km é ') , Km_Total as relatorio_mensal
+from relatorio_mensal
+where idRelatorio_Mensal = total_KM ;
+
+call total_Km (2);
+
+/* ------------------------------------------------------------------------ */
+
+
+create procedure  KM_Dia ( KM_Dia float)
+select CONCAT(' O KM do dia é ') , Km_do_dia as relatorio_diario
+from relatorio_diario
+where idRelatorio_Diario = KM_Dia ;
+
+call KM_Dia (2);
+
+/* ------------------------------------------------------------------------ */
+
+create procedure  preço_pneus ( preço_pneus int)
+select CONCAT(' O valor da troca de pneus é ') , Troca_de_Pneus as manuntenção
+from manuntenção
+where idManutenção = preço_pneus;
+
+call preço_pneus (2);
+
+/* Procedures */  
+
+create table foto_motorista (
+id_motorista int auto_increment,
+foto_motorista longblob,
+primary key (id_motorista)
+);
+
+/* Blob */ 
+
+create index ind_faturamento_id on faturamento(idFaturamento);
+
+/* Indice para que possa consultar o faturamento de um determidado id , isso irá facilitar muito para podermos saber quem estao faturando mais com o aplicativo */
+
+create index ind_relatorio_mensal on relatorio_mensal (idRelatorio_Mensal);
+
+/* Indice para que possa consultar o relatorio de um determidado id , isso irá facilitar muito para podermos saber dados do mês de cada motorista */
+
+
+create table if not exists imagem (
+id_img bigint not null auto_increment primary key,
+nome varchar (50),
+dados longblob 
+);
+
+create table if not exists pessoa (
+pessoaID bigint not null AUTO_INCREMENT primary key,
+nome varchar(45)  not null,
+cpf bigint(11) not null UNIQUE,
+email  varchar(45) not null unique,
+senha varchar (20)  not null,
+telefone bigint (14) not null,
+localizacao varchar(45));
+
+
+create table if not exists carro (
+carroID bigint not null AUTO_INCREMENT primary key,
+placa varchar(8) not null unique,
+cor varchar (15) not null,
+modelo varchar(20) not null,
+marca varchar (20) not null
+);
+
+create table if not exists motorista (
+motoristaID bigint not null AUTO_INCREMENT primary key,
+categoria_cnh varchar (1) not null,
+numero_cnh bigint (11) not null unique,
+classificacao float (5) not null default 5,
+id_pessoa bigint not null,
+id_carro bigint,
+telefone varchar(45) DEFAULT NULL,
+CEP varchar(45) DEFAULT NULL,
+Saldo double DEFAULT NULL,
+foreign key (id_carro) references carro (carroID)
+on delete cascade
+on update cascade,
+foreign key (id_pessoa) references pessoa (pessoaID)
+on delete cascade
+on update cascade
+)ENGINE=INNODB;
+
+
+create table log_motorista(
+id_motorista int auto_increment primary key not null,
+old_categoria_cnh varchar (1),
+new_categoria_cnh varchar (1) default null,
+old_cor varchar(15),
+new_cor varchar(15) default null,
+old_senha varchar (20),
+new_senha varchar (20) default null,
+acao varchar (45),
+usuario varchar(45),
+hora timestamp);
+
+
+create view VW_info_motorista (nome,classificacao,placa,cor,modelo,marca) as 
+select nome,classificacao,placa,cor,modelo,marca 
+from motorista as m inner join carro as c on m.id_carro = c.carroID inner join pessoa as p on p.pessoaID = m.id_pessoa
+where m.motoristaID = 1; 
+
+create view VW_info_pessoa (nome,telefone,localizacao) as
+select nome,telefone,localizacao
+from pessoa as p 	
+where p.pessoaID =1;
+
+create view VW_alta_classificacao as
+select classificacao,motoristaID,nome,email
+from motorista as m inner join pessoa as p on m.motoristaID = p.pessoaID
+where classificacao >= 4.5;
+
+create view VW_baixa_classificacao as
+select classificacao,motoristaID,nome,email
+from motorista as m inner join pessoa as p on m.motoristaID = p.pessoaID
+where classificacao <= 1.5;
+
+DELIMITER $$
+create trigger TR_log_motorista after update on motorista
+for each row 
+BEGIN
+insert into log_motorista (old_categoria_cnh,new_categoria_cnh,acao,usuario,hora)
+values (old.categoria_cnh,new.categoria_cnh,'update', user(),now());
+end $$
+
+DELIMITER $$
+create trigger TR_senha after update on pessoa  
+for each row
+BEGIN
+insert into log_motorista (old_senha,new_senha,acao,usuario,hora)
+values (old.senha,new.senha,'update',user(),now());
+end $$
+ 
+DELIMITER &&
+create trigger TR_cor after update on carro
+for each row
+BEGIN
+insert into log_motorista (old_cor,new_cor,acao,usuario,hora)
+values (old.cor,new.cor,'update',user(),now());
+end &&
+
+DELIMITER $$
+CREATE PROCEDURE PD_inserir_motorista (in nomeIN varchar(45), in cpfIN bigint, in emailIN varchar(45),
+in senhaIN varchar(20), in telefoneIN  bigint, in categoria_cnhIN varchar(1), in numero_cnhIN bigint)
+begin
+insert into pessoa (nome, cpf, email, senha, telefone) values (nomeIN, cpfIN, emailIN, senhaIN, telefoneIN);
+insert into motorista (categoria_cnh, numero_cnh, id_pessoa) values (categoria_cnhIN, numero_cnhIN, pessoa.pessoaID);
+end $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE PD_consultar_motorista ()
+begin
+select * from VW_info_motorista;
+end $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE PD_inserir_carro (in placaIN varchar(8), in corIN varchar(15), in modeloIN varchar(20), in marca varchar(20))
+begin
+insert into carro (placa, cor, modelo, marca) values (placaIN, corIN, modeloIN, marcaIN);
+end $$
+DELIMITER ;
+
+/*index necessario para apresentacao das informacoes de contato do passageiro para o motorista contactar o mesmo*/
+create index idx_consulta_contatos_pessoa
+on pessoa (nome, email, telefone);
+/*index necessario para apresentacao das informacoes de registros legais do motorista*/
+create index idx_consulta_motorista
+on motorista (categoria_cnh, numero_cnh);
+/*index necessario para apresentacao de informacoes sobre o carro do motorista para identificacao pelo passageiro na hora do embarque*/
+create index idx_consulta_carro
+on carro (placa, modelo, marca);
+
+
+CREATE TABLE `cartaodecredito` (
+  `idCartaoDeCredito` bigint NOT NULL AUTO_INCREMENT,
+  `NumCartao` int(11) NOT NULL,
+  `VencimentoCartao` date NOT NULL,
+  `NomeTitular` varchar(45) NOT NULL,
+  `CVV` varchar(45) NOT NULL,
+  `FormaDePagamento_idFormaDePagamento` bigint NOT NULL,
+  PRIMARY KEY (`idCartaoDeCredito`),
+  KEY `fk_CartaoDeCredito_FormaDePagamento1_idx` (`FormaDePagamento_idFormaDePagamento`),
+  CONSTRAINT `fk_CartaoDeCredito_FormaDePagamento1` FOREIGN KEY (`FormaDePagamento_idFormaDePagamento`) REFERENCES `formadepagamento` (`idFormaDePagamento`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE `cliente` (
+  `idcliente` bigint NOT NULL,
+  `nome_cli` varchar(45) NOT NULL,
+  `CPF_cli` varchar(45) NOT NULL,
+  `email` varchar(45) NOT NULL,
+  `telefone` varchar(45) DEFAULT NULL,
+  PRIMARY KEY (`idcliente`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE `formadepagamento` (
+  `idFormaDePagamento` bigint NOT NULL AUTO_INCREMENT,
+  `DataHora` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `Viagem_idViagem` bigint  NOT NULL,
+  PRIMARY KEY (`idFormaDePagamento`),
+  KEY `fk_FormaDePagamento_Viagem1_idx` (`Viagem_idViagem`),
+  CONSTRAINT `fk_FormaDePagamento_Viagem1` FOREIGN KEY (`Viagem_idViagem`) REFERENCES `viagem` (`idViagem`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE `paypal` (
+  `idPayPal` bigint NOT NULL AUTO_INCREMENT,
+  `Login` varchar(45) NOT NULL,
+  `Senha` varchar(45) NOT NULL,
+  `NumeroCartao` int(11) NOT NULL,
+  `FormaDePagamento_idFormaDePagamento` bigint NOT NULL,
+  PRIMARY KEY (`idPayPal`),
+  KEY `fk_PayPal_FormaDePagamento1_idx` (`FormaDePagamento_idFormaDePagamento`),
+  CONSTRAINT `fk_PayPal_FormaDePagamento1` FOREIGN KEY (`FormaDePagamento_idFormaDePagamento`) REFERENCES `formadepagamento` (`idFormaDePagamento`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `valepresente` (
+  `idValePresente` bigint NOT NULL AUTO_INCREMENT,
+  `Codigo` varchar(45) NOT NULL,
+  `Valor` double NOT NULL,
+  `FormaDePagamento_idFormaDePagamento` bigint DEFAULT NULL,
+  PRIMARY KEY (`idValePresente`),
+  KEY `fk_ValePresente_FormaDePagamento1_idx` (`FormaDePagamento_idFormaDePagamento`),
+  CONSTRAINT `fk_ValePresente_FormaDePagamento1` FOREIGN KEY (`FormaDePagamento_idFormaDePagamento`) REFERENCES `formadepagamento` (`idFormaDePagamento`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE `viagem` (
+  `idViagem` bigint NOT NULL AUTO_INCREMENT,
+  `Origem` varchar(45) NOT NULL,
+  `Destino` varchar(45) NOT NULL,
+  `TotalViagem` double NOT NULL,
+  `motorista_motoristaID` bigint  DEFAULT NULL,
+  `cliente_idcliente` bigint  DEFAULT NULL,
+  PRIMARY KEY (`idViagem`),
+  KEY `fk_Viagem_motorista1_idx` (`motorista_motoristaID`),
+  KEY `fk_Viagem_cliente1_idx` (`cliente_idcliente`),
+  foreign key (cliente_idcliente) references pessoa (pessoaID) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  foreign key (motorista_motoristaID) references motorista (motoristaID)  ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
